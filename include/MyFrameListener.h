@@ -28,6 +28,9 @@ private:
     std::deque <OgreBulletDynamics::RigidBody *>         _bodies;
     std::deque <OgreBulletCollisions::CollisionShape *>  _shapes;
 
+    OgreBulletCollisions::CollisionShape *_sheepCommonShape;
+    OgreBulletCollisions::CollisionShape *_boxCommonShape;
+
     enum TEDynamicObject {
         box,
         sheep

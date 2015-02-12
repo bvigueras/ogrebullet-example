@@ -23,16 +23,33 @@ MyFrameListener::MyFrameListener(RenderWindow *win,
                                  Camera *cam,
                                  OverlayManager *om,
                                  SceneManager *sm) {
-    OIS::ParamList param;
+    OIS::ParamList paramList;
     size_t windowHandle;  std::ostringstream wHandleStr;
 
-    _camera = cam;  _overlayManager = om; _sceneManager = sm;  _win = win;
+    _camera = cam;
+    _overlayManager = om;
+    _sceneManager = sm;
+    _win = win;
+    _sheepCommonShape = NULL;
+    _boxCommonShape = NULL;
 
     win->getCustomAttribute("WINDOW", &windowHandle);
     wHandleStr << windowHandle;
-    param.insert(std::make_pair("WINDOW", wHandleStr.str()));
+    paramList.insert(std::make_pair("WINDOW", wHandleStr.str()));
 
-    _inputManager = OIS::InputManager::createInputSystem(param);
+#if defined OIS_WIN32_PLATFORM
+    paramList.insert(std::make_pair(std::string("w32_mouse"), std::string("DISCL_FOREGROUND" )));
+    paramList.insert(std::make_pair(std::string("w32_mouse"), std::string("DISCL_NONEXCLUSIVE")));
+    paramList.insert(std::make_pair(std::string("w32_keyboard"), std::string("DISCL_FOREGROUND")));
+    paramList.insert(std::make_pair(std::string("w32_keyboard"), std::string("DISCL_NONEXCLUSIVE")));
+#elif defined OIS_LINUX_PLATFORM
+    paramList.insert(std::make_pair(std::string("x11_mouse_grab"), std::string("false")));
+    paramList.insert(std::make_pair(std::string("x11_mouse_hide"), std::string("false")));
+    paramList.insert(std::make_pair(std::string("x11_keyboard_grab"), std::string("false")));
+    paramList.insert(std::make_pair(std::string("XAutoRepeatOn"), std::string("true")));
+#endif
+
+    _inputManager = OIS::InputManager::createInputSystem(paramList);
     _keyboard = static_cast<OIS::Keyboard *>
                 (_inputManager->createInputObject(OIS::OISKeyboard, false));
     _mouse = static_cast<OIS::Mouse *>
@@ -88,7 +105,8 @@ MyFrameListener::~MyFrameListener() {
     _shapes.clear();
 
     // Eliminar mundo dinamico y debugDrawer -------------------------
-    delete _world->getDebugDrawer();    _world->setDebugDrawer(0);
+    delete _world->getDebugDrawer();
+    _world->setDebugDrawer(0);
     delete _world;
 }
 
@@ -151,17 +169,23 @@ void MyFrameListener::AddDynamicObject(TEDynamicObject tObject) {
 
     switch (tObject) {
     case sheep:
-        trimeshConverter = new
-        OgreBulletCollisions::StaticMeshToShapeConverter(entity);
-        bodyShape = trimeshConverter->createConvex();
-        delete trimeshConverter;
+        if (!_sheepCommonShape) {
+            trimeshConverter = new
+            OgreBulletCollisions::StaticMeshToShapeConverter(entity);
+            _sheepCommonShape = trimeshConverter->createConvex();
+            delete trimeshConverter;
+        }
+        bodyShape = _sheepCommonShape;
         break;
     case box:
     default:
-        AxisAlignedBox boundingB = entity->getBoundingBox();
-        size = boundingB.getSize();
-        size /= 2.0f;   // El tamano en Bullet se indica desde el centro
-        bodyShape = new OgreBulletCollisions::BoxCollisionShape(size);
+        if (!_boxCommonShape) {
+            AxisAlignedBox boundingB = entity->getBoundingBox();
+            size = boundingB.getSize();
+            size /= 2.0f;   // El tamano en Bullet se indica desde el centro
+            _boxCommonShape = new OgreBulletCollisions::BoxCollisionShape(size);
+        }
+        bodyShape = _boxCommonShape;
     }
 
     rigidBody = new OgreBulletDynamics::RigidBody("rigidBody" +
@@ -178,7 +202,8 @@ void MyFrameListener::AddDynamicObject(TEDynamicObject tObject) {
     _numEntities++;
 
     // Anadimos los objetos a las deques
-    _shapes.push_back(bodyShape);   _bodies.push_back(rigidBody);
+    _shapes.push_back(bodyShape);
+    _bodies.push_back(rigidBody);
 }
 
 RigidBody *MyFrameListener::pickBody (Vector3 &p, Ray &r, float x, float y) {
