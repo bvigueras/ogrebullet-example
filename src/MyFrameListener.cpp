@@ -37,18 +37,6 @@ MyFrameListener::MyFrameListener(RenderWindow *win,
     wHandleStr << windowHandle;
     paramList.insert(std::make_pair("WINDOW", wHandleStr.str()));
 
-#if defined OIS_WIN32_PLATFORM
-    paramList.insert(std::make_pair(std::string("w32_mouse"), std::string("DISCL_FOREGROUND" )));
-    paramList.insert(std::make_pair(std::string("w32_mouse"), std::string("DISCL_NONEXCLUSIVE")));
-    paramList.insert(std::make_pair(std::string("w32_keyboard"), std::string("DISCL_FOREGROUND")));
-    paramList.insert(std::make_pair(std::string("w32_keyboard"), std::string("DISCL_NONEXCLUSIVE")));
-#elif defined OIS_LINUX_PLATFORM
-    paramList.insert(std::make_pair(std::string("x11_mouse_grab"), std::string("false")));
-    paramList.insert(std::make_pair(std::string("x11_mouse_hide"), std::string("false")));
-    paramList.insert(std::make_pair(std::string("x11_keyboard_grab"), std::string("false")));
-    paramList.insert(std::make_pair(std::string("XAutoRepeatOn"), std::string("true")));
-#endif
-
     _inputManager = OIS::InputManager::createInputSystem(paramList);
     _keyboard = static_cast<OIS::Keyboard *>
                 (_inputManager->createInputObject(OIS::OISKeyboard, false));
